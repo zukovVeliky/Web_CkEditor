@@ -20,6 +20,7 @@ Znovupouzitelna CKEditor 5 integrace pro ASP.NET Core Razor Pages s primo zabudo
 
 - ASP.NET Core Razor Pages
 - nainstalovana komponenta `Web_FileManager` a dostupna URL `/FileManager`
+- neni potreba Entity Framework
 
 ## Instalace
 
