@@ -1,0 +1,84 @@
+# Web CKEditor (Razor Pages)
+
+Znovupouzitelna CKEditor 5 integrace pro ASP.NET Core Razor Pages s primo zabudovanou vazbou na `Web_FileManager`.
+
+## Zasadni informace
+
+- Tato komponenta je navrzena tak, aby vybirala soubory pres stranku `/FileManager`.
+- Bez funkcniho `Web_FileManager` nebude tlacitko souboroveho manageru fungovat.
+- Vazba funguje pres callback funkci (`callback`) a picker parametry (`picker=1`, `allowExt`, `root`).
+
+## Obsah repozitare
+
+- `Areas/CKEditor5/Pages/CKEditor5.cshtml`
+- `Areas/CKEditor5/Pages/CKEditor5.cshtml.cs`
+- `Areas/CKEditor5/Pages/CKEditor5Inline.cshtml`
+- `Areas/CKEditor5/Pages/CKEditor5Inline.cshtml.cs`
+- `wwwroot/lib/CKEditor5/*` (build + translations)
+
+## Pozadavky
+
+- ASP.NET Core Razor Pages
+- nainstalovana komponenta `Web_FileManager` a dostupna URL `/FileManager`
+
+## Instalace
+
+1. Naklonuj:
+   - `git clone https://github.com/zukovVeliky/Web_CkEditor.git`
+2. Zkopiruj soubory do ciloveho projektu pri zachovani cest.
+3. Ujisti se, ze v layoutu je dostupny Bootstrap (volitelne) a JS/CSS staticke soubory.
+
+## Zakladni pouziti (stranka pro editaci clanku)
+
+V Razor Page:
+
+```cshtml
+@await Html.PartialAsync(
+    "~/Areas/CKEditor5/Pages/CKEditor5.cshtml",
+    new CKEditor5.CKEditor5Model(
+        text: Model.ArticleContent,
+        Path: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("UzivatelskeSoubory/Articles")),
+        url: Request,
+        instanceId: "article-editor",
+        callbackName: "ArticleEditorFileCallback",
+        pickerAllowExt: "jpg,jpeg,png,gif,webp,svg,pdf",
+        pickerPopupName: "FileManagerPicker_Article")
+)
+```
+
+## Konfigurace
+
+Konfiguruj per-instanci pres parametry konstruktoru `CKEditor5Model`:
+
+- `instanceId`: unikatni id editoru na strance
+- `callbackName`: globalni JS callback, ktery prevezme URL z FileManageru
+- `pickerAllowExt`: omezeni pripon ve FileManager pickeru
+- `pickerPopupName`: jmeno popup okna
+- `Path`: Base64 URL root cesta pro FileManager
+
+## Vazba na FileManager
+
+CKEditor otevira:
+
+- `/FileManager?picker=1&allowExt=...&callback=...&root=...`
+
+Po vyberu souboru FileManager zavola callback (napr. `ArticleEditorFileCallback(url, fileName)`).
+
+Vysledek:
+
+- obrazek -> `insertImage`
+- ostatni soubor -> odkaz (`link`)
+
+## Nasazeni
+
+- over, ze `/FileManager` je dostupny i v produkci
+- pokud je app za reverzni proxy, udrz kompatibilni URL scheme/host
+- povol popup okna pro domenu aplikace
+
+## Troubleshooting
+
+- tlacitko FileManager nic neotevre:
+  - popup blocker
+  - chybi `/FileManager` route
+- soubor se nevlozi:
+  - nesouhlasi `callbackName` mezi CKEditorem a FileManager URL parametrem
