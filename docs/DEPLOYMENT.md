@@ -32,3 +32,6 @@
 3. vyber obrazek
 4. over vlozeni obrazku do editoru
 5. vyber ne-obrazek a over vlozeni odkazu
+
+Poznamka:
+- pripadne demo helpery jsou volitelne a nejsou nutne pro produkcni integraci.

@@ -8,6 +8,11 @@
 <textarea id="@Model.EditorElementId" name="ckeditor5">
     @Model.Text
 </textarea>
+<div style="margin-top: 10px;">
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openLibFileManager()">
+        Otevřít file manager (lib)
+    </button>
+</div>
 
 <script>
     var CKEditor = null;
@@ -206,6 +211,11 @@
         } catch (e) {
             return '';
         }
+    }
+
+    function openLibFileManager() {
+        var url = '/FileManager?root=' + encodeURIComponent(encodeFileManagerParam('lib'));
+        window.open(url, 'FileManagerLib', 'width=1280,height=820,resizable=yes,scrollbars=yes');
     }
 
     function resolveRootPath() {
