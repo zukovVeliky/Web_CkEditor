@@ -2,6 +2,15 @@
 
 Znovupouzitelna CKEditor 5 integrace pro ASP.NET Core Razor Pages s primo zabudovanou vazbou na `Web_FileManager`.
 
+## Souvisejici repozitare (cross-reference)
+
+Pokud mas otevreny pouze tento repozitar, ostatni komponenty dohledej zde:
+
+- `Web_FileManager`: https://github.com/zukovVeliky/Web_FileManager
+  - centralni file picker + sprava souboru + API.
+- `Web_Avatar`: https://github.com/zukovVeliky/Web_Avatar
+  - avatar crop komponenta navazana na FileManager.
+
 ## Zasadni informace
 
 - Tato komponenta je navrzena tak, aby vybirala soubory pres stranku `/FileManager`.
