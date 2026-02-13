@@ -33,5 +33,13 @@
 4. over vlozeni obrazku do editoru
 5. vyber ne-obrazek a over vlozeni odkazu
 
+## 6. Multi-instance smoke test (dulezite)
+
+1. na jednu stranku vloz 2+ CKEditor komponenty
+2. v prvnim editoru otevri FileManager a vloz obrazek
+3. over, ze obrazek je vlozen do prvniho editoru (ne do posledniho)
+4. stejny test proved na dalsi instanci
+5. pokud selhava, zkontroluj unikatni `instanceId` + `callbackName` + `pickerPopupName`
+
 Poznamka:
 - pripadne demo helpery jsou volitelne a nejsou nutne pro produkcni integraci.

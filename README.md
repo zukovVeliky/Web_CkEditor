@@ -72,6 +72,22 @@ Konfiguruj per-instanci pres parametry konstruktoru `CKEditor5Model`:
 - `pickerPopupName`: jmeno popup okna
 - `Path`: Base64 URL root cesta pro FileManager
 
+## Vice editoru na jedne strance
+
+Pokud mas na strance vice CKEditor instanci, musi mit kazda vlastni:
+
+- `instanceId`
+- `callbackName`
+- `pickerPopupName`
+
+Doporuceni:
+
+- nikdy nepouzivej stejny `callbackName` pro 2 editory
+- `callbackName` skladat z prefixu + `instanceId` (napr. `ArticleEditorFileCallback_home_editor`)
+- zachovat oddelenou konfiguraci v `component-settings.json` per `instanceId`
+
+Aktualni verze partialu `CKEditor5.cshtml` je izolovana per instance (IIFE), aby callback z FileManageru necilil vzdy na posledni editor na strance.
+
 ## Vazba na FileManager
 
 CKEditor otevira:

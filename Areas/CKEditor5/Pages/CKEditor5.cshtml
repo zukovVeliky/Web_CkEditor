@@ -85,10 +85,10 @@
     @Model.Text
 </textarea>
 <div style="margin-top: 10px;">
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openLibFileManager()">
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="window['openLibFileManager_@Model.InstanceId']()">
         Otevřít file manager (lib)
     </button>
-    <button type="button" class="btn btn-sm btn-success" onclick="showEditedTextPreview('@Model.InstanceId')">
+    <button type="button" class="btn btn-sm btn-success" onclick="window['showEditedTextPreview_@Model.InstanceId']()">
         Uložit (test)
     </button>
 </div>
@@ -98,6 +98,7 @@
 </div>
 
 <script>
+(function () {
     var CKEditor = null;
     var linkPickerState = {
         active: false
@@ -555,5 +556,10 @@
         }
     }
 
+    window['openLibFileManager_' + editorInstanceId] = openLibFileManager;
+    window['showEditedTextPreview_' + editorInstanceId] = function () {
+        showEditedTextPreview(editorInstanceId);
+    };
+})();
 </script>
 
