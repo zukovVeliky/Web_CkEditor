@@ -16,6 +16,8 @@ Znovupouzitelna CKEditor 5 integrace pro ASP.NET Core Razor Pages s primo zabudo
 - `Areas/CKEditor5/Pages/CKEditor5Inline.cshtml.cs`
 - `wwwroot/lib/CKEditor5/*` (build + translations)
 
+Repo neobsahuje hotovou cilovou stranku clanku. Obsahuje pouze komponentove soubory a manual pro vlozeni do vlastni stranky.
+
 ## Pozadavky
 
 - ASP.NET Core Razor Pages
