@@ -1,7 +1,16 @@
 @model CKEditor5.CKEditor5InlineModel
 @{
+    const string inlineScriptContextKey = "__kk_ckeditor_inline_script_emitted";
+    var emitInlineScriptTag = !Context.Items.ContainsKey(inlineScriptContextKey);
+    if (emitInlineScriptTag)
+    {
+        Context.Items[inlineScriptContextKey] = true;
+    }
 }
-<script src="~/lib/CKEditor5/ckeditorInline.js"></script>
+@if (emitInlineScriptTag)
+{
+    <script src="~/lib/CKEditor5/ckeditorInline.js"></script>
+}
 @Html.AntiForgeryToken()   
 <script>
     SetPath = '@Model.SetPath';

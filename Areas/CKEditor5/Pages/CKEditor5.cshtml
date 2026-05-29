@@ -1,9 +1,35 @@
 ﻿@model CKEditor5.CKEditor5Model
 @{
+    const string inlineScriptContextKey = "__kk_ckeditor_inline_script_emitted";
+    const string classicScriptContextKey = "__kk_ckeditor_classic_script_emitted";
+    var emitInlineScriptTag = !Context.Items.ContainsKey(inlineScriptContextKey);
+    var emitClassicScriptTag = !Context.Items.ContainsKey(classicScriptContextKey);
+
+    if (emitInlineScriptTag)
+    {
+        Context.Items[inlineScriptContextKey] = true;
+    }
+
+    if (emitClassicScriptTag)
+    {
+        Context.Items[classicScriptContextKey] = true;
+    }
 }
 
-
-<script src="~/lib/ckeditor5/ckeditor.js"></script>
+@if (Model.UseInlineEditor)
+{
+    @if (emitInlineScriptTag)
+    {
+        <script src="~/lib/CKEditor5/ckeditorInline.js"></script>
+    }
+}
+else
+{
+    @if (emitClassicScriptTag)
+    {
+        <script src="~/lib/CKEditor5/ckeditor.js"></script>
+    }
+}
 @Html.AntiForgeryToken()
 <style>
     .ck.ck-link-form.ck-vertical-form {
@@ -80,22 +106,29 @@
     .ck.ck-link-form .ck-button-cancel * {
         cursor: pointer !important;
     }
+
+    .ck-editor__editable_inline {
+        min-height: 16rem;
+    }
+
+    .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {
+        z-index: 1042;
+    }
+
+    .ck.ck-balloon-panel,
+    .ck.ck-dropdown__panel {
+        z-index: 1045;
+    }
 </style>
-<textarea id="@Model.EditorElementId" name="ckeditor5">
-    @Model.Text
-</textarea>
-<div style="margin-top: 10px;">
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="window['openLibFileManager_@Model.InstanceId']()">
-        Otevřít file manager (lib)
-    </button>
-    <button type="button" class="btn btn-sm btn-success" onclick="window['showEditedTextPreview_@Model.InstanceId']()">
-        Uložit (test)
-    </button>
-</div>
-<div id="editor-preview-wrap-@Model.InstanceId" style="margin-top: 14px; display: none;">
-    <h6>Výstup editoru (test)</h6>
-    <div id="editor-preview-@Model.InstanceId" style="border: 1px solid #ddd; padding: 12px; background: #fff;"></div>
-</div>
+@if (Model.UseInlineEditor)
+{
+    <div id="@($"{Model.EditorElementId}_inline")" class="ckeditor-inline-host" contenteditable="true">@Html.Raw(Model.Text ?? string.Empty)</div>
+    <textarea id="@Model.EditorElementId" name="ckeditor5" rows="10" hidden>@Model.Text</textarea>
+}
+else
+{
+    <textarea id="@Model.EditorElementId" name="ckeditor5" rows="10">@Model.Text</textarea>
+}
 
 <script>
 (function () {
@@ -166,15 +199,36 @@
 
     FileManagerToolbarPlugin.pluginName = 'FileManagerToolbarPlugin';
 
-    ClassicEditor
-        .create(document.querySelector('#@Model.EditorElementId'), buildEditorConfig())
+    var useInlineEditor = @Model.UseInlineEditor.ToString().ToLowerInvariant();
+    var editorSourceElement = document.querySelector(useInlineEditor ? '#@Model.EditorElementId' + '_inline' : '#@Model.EditorElementId');
+    var EditorCtor = useInlineEditor ? InlineEditor : ClassicEditor;
+
+    EditorCtor
+        .create(editorSourceElement, buildEditorConfig())
         .then(function (editor) {
             CKEditor = editor;
+            registerEditorViewportSync(editor);
             attachLinkFileManagerButton(editor);
+
+            if (useInlineEditor) {
+                syncInlineHtmlToTextarea();
+                editor.model.document.on('change:data', syncInlineHtmlToTextarea);
+            }
         })
         .catch(function (error) {
             console.error(error);
         });
+
+    function syncInlineHtmlToTextarea() {
+        if (!useInlineEditor || !CKEditor) {
+            return;
+        }
+
+        var textArea = document.getElementById('@Model.EditorElementId');
+        if (textArea) {
+            textArea.value = CKEditor.getData();
+        }
+    }
 
     window[callbackName] = function (zachyceneURL, fileName) {
         if (!CKEditor || !zachyceneURL) {
@@ -207,6 +261,11 @@
     function buildEditorConfig() {
         return {
             extraPlugins: [FileManagerToolbarPlugin],
+            ui: {
+                viewportOffset: {
+                    top: resolveEditorViewportOffsetTop()
+                }
+            },
             link: {
                 decorators: {
                     openInNewTab: {
@@ -262,6 +321,81 @@
                 ]
             }
         };
+    }
+
+    function resolveEditorViewportOffsetTop() {
+        if (typeof window.__ckEditorViewportOffsetTop === 'number' && !Number.isNaN(window.__ckEditorViewportOffsetTop)) {
+            return Math.max(0, Math.ceil(window.__ckEditorViewportOffsetTop));
+        }
+
+        var selectors = [
+            '#v2-tools-header-shell',
+            '.v2-tools-header-shell'
+        ];
+        var maxBottom = 0;
+
+        selectors.forEach(function (selector) {
+            Array.prototype.forEach.call(document.querySelectorAll(selector), function (element) {
+                if (!element || element.offsetParent === null) {
+                    return;
+                }
+
+                if (element.classList && element.classList.contains('v2-tools-header-shell') && element.classList.contains('is-collapsed')) {
+                    return;
+                }
+
+                var rect = element.getBoundingClientRect();
+                if (rect.bottom > 0 && rect.top <= 8) {
+                    maxBottom = Math.max(maxBottom, rect.bottom);
+                }
+            });
+        });
+
+        return Math.ceil(maxBottom);
+    }
+
+    function applyEditorViewportOffset(editor) {
+        if (!editor || !editor.ui) {
+            return;
+        }
+
+        var offset = {
+            top: resolveEditorViewportOffsetTop()
+        };
+
+        if (typeof editor.ui.set === 'function') {
+            editor.ui.set('viewportOffset', offset);
+        } else {
+            editor.ui.viewportOffset = offset;
+        }
+    }
+
+    function registerEditorViewportSync(editor) {
+        window.__kkCkeditorViewportEditors = window.__kkCkeditorViewportEditors || [];
+        window.__kkCkeditorViewportEditors.push(editor);
+        applyEditorViewportOffset(editor);
+
+        if (window.__kkCkeditorViewportSyncBound) {
+            return;
+        }
+
+        window.__kkCkeditorViewportSyncBound = true;
+        var scheduled = false;
+        var syncAll = function () {
+            scheduled = false;
+            (window.__kkCkeditorViewportEditors || []).forEach(applyEditorViewportOffset);
+        };
+        var scheduleSync = function () {
+            if (scheduled) {
+                return;
+            }
+
+            scheduled = true;
+            window.requestAnimationFrame(syncAll);
+        };
+
+        window.addEventListener('scroll', scheduleSync, { passive: true });
+        window.addEventListener('resize', scheduleSync);
     }
 
     function attachLinkFileManagerButton(editor) {
@@ -493,6 +627,20 @@
     }
 
     function resolveRootPath() {
+        var overrideSource = null;
+        if (window.__ckEditorRootOverrides && typeof window.__ckEditorRootOverrides === 'object') {
+            overrideSource = window.__ckEditorRootOverrides;
+        } else if (window.__kulturaRootOverrides && typeof window.__kulturaRootOverrides === 'object') {
+            overrideSource = window.__kulturaRootOverrides;
+        }
+
+        if (overrideSource) {
+            var overrideRoot = overrideSource[callbackName] || overrideSource[editorInstanceId];
+            if (typeof overrideRoot === 'string' && overrideRoot.trim()) {
+                return overrideRoot.trim();
+            }
+        }
+
         var raw = SetPath || '';
         return decodeFileManagerParam(raw);
     }
@@ -562,4 +710,5 @@
     };
 })();
 </script>
+
 

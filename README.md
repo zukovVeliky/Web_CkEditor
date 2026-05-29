@@ -1,52 +1,46 @@
-# Web CKEditor (Razor Pages)
+# Web_CkEditor Component Package
 
-Znovupouzitelna CKEditor 5 integrace pro ASP.NET Core Razor Pages s primo zabudovanou vazbou na `Web_FileManager`.
+Znovupouzitelna CKEditor 5 integrace pro ASP.NET Core Razor Pages s primou vazbou na `Web_FileManager`.
 
-## Souvisejici repozitare (cross-reference)
+Aktualni verze podporuje:
 
-Pokud mas otevreny pouze tento repozitar, ostatni komponenty dohledej zde:
+- `ClassicEditor`
+- `InlineEditor`
+- bezpecne vice instanci editoru na jedne strance
+- jednorazove nacitani build scriptu
+- vazbu na FileManager picker
+- vlozeni obrazku i neobrazkovych souboru
+- viewport offset pro sticky admin hlavicku
+- volitelne root overrides per editor instance
 
-- `Web_FileManager`: https://github.com/zukovVeliky/Web_FileManager
-  - centralni file picker + sprava souboru + API.
-- `Web_Avatar`: https://github.com/zukovVeliky/Web_Avatar
-  - avatar crop komponenta navazana na FileManager.
+## Co zkopirovat 1:1
 
-## Zasadni informace
+- `Areas/CKEditor5`
+- `wwwroot/lib/CKEditor5`
 
-- Tato komponenta je navrzena tak, aby vybirala soubory pres stranku `/FileManager`.
-- Bez funkcniho `Web_FileManager` nebude tlacitko souboroveho manageru fungovat.
-- Vazba funguje pres callback funkci (`callback`) a picker parametry (`picker=1`, `allowExt`, `root`).
+Neměn:
 
-## Obsah repozitare
+- `Areas/CKEditor5`
+- `wwwroot/lib/CKEditor5`
+- namespace `CKEditor5`
 
-- `Areas/CKEditor5/Pages/CKEditor5.cshtml`
-- `Areas/CKEditor5/Pages/CKEditor5.cshtml.cs`
-- `Areas/CKEditor5/Pages/CKEditor5Inline.cshtml`
-- `Areas/CKEditor5/Pages/CKEditor5Inline.cshtml.cs`
-- `wwwroot/lib/CKEditor5/*` (build + translations)
-
-## Dulezite: demo vs integrace
-
-- Komponenta obsahuje i demo prvky (napr. pomocne otevreni FileManageru na `lib`), aby bylo jasne videt vazbu na FileManager.
-- Demo cast je orientacni a neslouzi jako povinna integracni vrstva.
-- Pro realnou integraci vloz komponentu do vlastni stranky a nastav callback/root dle sveho projektu.
-
-## Pozadavky
+## Závislosti
 
 - ASP.NET Core Razor Pages
-- nainstalovana komponenta `Web_FileManager` a dostupna URL `/FileManager`
-- neni potreba Entity Framework
+- nainstalovany a funkcni `Web_FileManager`
+- dostupna route `/FileManager`
 
-## Instalace
+## Jak se komponenta renderuje
 
-1. Naklonuj:
-   - `git clone https://github.com/zukovVeliky/Web_CkEditor.git`
-2. Zkopiruj soubory do ciloveho projektu pri zachovani cest.
-3. Ujisti se, ze v layoutu je dostupny Bootstrap (volitelne) a JS/CSS staticke soubory.
+Zakladni partial:
 
-## Zakladni pouziti (stranka pro editaci clanku)
+- `~/Areas/CKEditor5/Pages/CKEditor5.cshtml`
 
-V Razor Page:
+Inline varianta:
+
+- `~/Areas/CKEditor5/Pages/CKEditor5Inline.cshtml`
+
+## Základní použití
 
 ```cshtml
 @await Html.PartialAsync(
@@ -57,60 +51,143 @@ V Razor Page:
         url: Request,
         instanceId: "article-editor",
         callbackName: "ArticleEditorFileCallback",
-        pickerAllowExt: "jpg,jpeg,png,gif,webp,svg,pdf",
-        pickerPopupName: "FileManagerPicker_Article")
+        pickerAllowExt: "jpg,jpeg,png,gif,bmp,webp,svg,pdf",
+        pickerPopupName: "FileManagerPicker_Article"
+    )
 )
 ```
 
-## Konfigurace
+## Inline editor
 
-Konfiguruj per-instanci pres parametry konstruktoru `CKEditor5Model`:
+```cshtml
+@await Html.PartialAsync(
+    "~/Areas/CKEditor5/Pages/CKEditor5.cshtml",
+    new CKEditor5.CKEditor5Model(
+        text: Model.SummaryHtml,
+        Path: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("UzivatelskeSoubory/Summary")),
+        url: Request,
+        instanceId: "summary-inline",
+        callbackName: "SummaryInlineCallback",
+        pickerPopupName: "FileManagerPicker_Summary",
+        useInlineEditor: true
+    )
+)
+```
 
-- `instanceId`: unikatni id editoru na strance
-- `callbackName`: globalni JS callback, ktery prevezme URL z FileManageru
-- `pickerAllowExt`: omezeni pripon ve FileManager pickeru
+`useInlineEditor: true` prepne komponentu na `InlineEditor` a zaroven synchronizuje HTML do skryteho `textarea`, aby sel obsah standardne odeslat ve formulari.
+
+## Parametry modelu
+
+- `text`: pocatecni HTML
+- `Path`: root pro FileManager jako Base64 nebo Base64URL string
+- `url`: aktualni `HttpRequest`
+- `instanceId`: unikatni identifikator editoru na strance
+- `callbackName`: jmeno globalni callback funkce pro FileManager
+- `pickerAllowExt`: povolene pripony v pickeru
 - `pickerPopupName`: jmeno popup okna
-- `Path`: Base64 URL root cesta pro FileManager
+- `useInlineEditor`: `false` pro Classic, `true` pro Inline
 
-## Vice editoru na jedne strance
+## Multi-instance pravidla
 
-Pokud mas na strance vice CKEditor instanci, musi mit kazda vlastni:
+Kazda instance editoru musi mit vlastni:
 
 - `instanceId`
 - `callbackName`
 - `pickerPopupName`
 
-Doporuceni:
+Aktualni verze partialu zamerne:
 
-- nikdy nepouzivej stejny `callbackName` pro 2 editory
-- `callbackName` skladat z prefixu + `instanceId` (napr. `ArticleEditorFileCallback_home_editor`)
-- zachovat oddelenou konfiguraci v `component-settings.json` per `instanceId`
-
-Aktualni verze partialu `CKEditor5.cshtml` je izolovana per instance (IIFE), aby callback z FileManageru necilil vzdy na posledni editor na strance.
+- registruje callback per instance
+- nespousti se nad posledni instanci na strance
+- nenačítá zbytečně `ckeditor.js` a `ckeditorInline.js` vicekrat
 
 ## Vazba na FileManager
 
-CKEditor otevira:
+CKEditor otevírá:
 
-- `/FileManager?picker=1&allowExt=...&callback=...&root=...`
+```text
+/FileManager?picker=1&allowExt=...&callback=...&root=...
+```
 
-Po vyberu souboru FileManager zavola callback (napr. `ArticleEditorFileCallback(url, fileName)`).
+Po vyberu FileManager vola:
 
-Vysledek:
+```js
+window[callbackName](url, fileName);
+```
 
-- obrazek -> `insertImage`
-- ostatni soubor -> odkaz (`link`)
+Komponenta pak:
 
-## Nasazeni
+- obrazek vlozi jako `insertImage`
+- neobrazkovy soubor vlozi jako odkaz
 
-- over, ze `/FileManager` je dostupny i v produkci
-- pokud je app za reverzni proxy, udrz kompatibilni URL scheme/host
-- povol popup okna pro domenu aplikace
+## Root overrides
 
-## Troubleshooting
+Pokud chces root menit dynamicky az na strance, pouzij:
 
-- tlacitko FileManager nic neotevre:
-  - popup blocker
-  - chybi `/FileManager` route
-- soubor se nevlozi:
-  - nesouhlasi `callbackName` mezi CKEditorem a FileManager URL parametrem
+```html
+<script>
+window.__ckEditorRootOverrides = {
+    "ArticleEditorFileCallback": "Event/123",
+    "summary-inline": "UzivatelskeSoubory/Summary"
+};
+</script>
+```
+
+Komponenta stale podporuje i legacy jmeno:
+
+- `window.__kulturaRootOverrides`
+
+## Viewport offset pro sticky hlavičku
+
+Kdyz host projekt ma vlastni sticky admin toolbar, komponenta umi upravit viewport offset.
+
+Moznosti:
+
+- automaticky fallback pro `#v2-tools-header-shell` a `.v2-tools-header-shell`
+- explicitne:
+
+```html
+<script>
+window.__ckEditorViewportOffsetTop = 72;
+</script>
+```
+
+## components.settings.json
+
+CKEditor typicky pouziva sekci:
+
+```json
+{
+  "components": {
+    "ckEditor": {
+      "defaults": {
+        "setPath": "UzivatelskeSoubory",
+        "callbackName": "ZachyceniURLCKeditor",
+        "pickerAllowExt": "jpg,jpeg,png,gif,bmp,webp,svg,pdf",
+        "popupName": "FileManagerPicker"
+      }
+    }
+  }
+}
+```
+
+## Smoke test
+
+1. Otevri stranku s editorem.
+2. Over, ze se editor vyrenderoval.
+3. Klikni FileManager button v toolbaru.
+4. Over popup `/FileManager`.
+5. Vyber obrazek a over vlozeni.
+6. Vyber PDF a over vlozeni odkazu.
+7. Pokud mas vice editoru na strance, proveď stejny test pro kazdou instanci.
+
+## Dokumentace
+
+- deployment checklist: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- AI playbook: [docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md)
+
+## Souvisejici repozitare
+
+- https://github.com/zukovVeliky/Web_CkEditor
+- https://github.com/zukovVeliky/Web_FileManager
+- https://github.com/zukovVeliky/Web_Avatar
